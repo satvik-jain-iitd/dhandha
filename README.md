@@ -2,8 +2,16 @@
 
 # 🏠 Dhandha — The Indian Property Card Game
 
-[![Live Demo](https://img.shields.io/badge/🎮_Live_Demo-Play_Now-E65100?style=for-the-badge)](https://satvik-jain-iitd.github.io/Monopoly-Deal-card-game-indian-version/)
-[![PWA](https://img.shields.io/badge/📱_PWA-Add_to_Home_Screen-1565C0?style=for-the-badge)](https://satvik-jain-iitd.github.io/Monopoly-Deal-card-game-indian-version/)
+**Monopoly Deal, made Indian.** Buy Bengaluru, charge rent on South Mumbai, steal your friend's Indore. On one phone, over hotspot, or online.
+
+[![Live Demo](https://img.shields.io/badge/🎮_Live_Demo-Play_Now-E65100?style=for-the-badge)](https://satvik-jain-iitd.github.io/dhandha/)
+[![PWA](https://img.shields.io/badge/📱_PWA-Add_to_Home_Screen-1565C0?style=for-the-badge)](https://satvik-jain-iitd.github.io/dhandha/)
+
+<img src="assets/readme/home.png" alt="Dhandha home screen: pick a mode and start" width="260">&nbsp;&nbsp;
+<img src="assets/readme/pass-device.png" alt="Pass and Play: hand the phone to the next player" width="260">&nbsp;&nbsp;
+<img src="assets/readme/game.png" alt="A turn in progress: your hand, the draw pile, and your opponents" width="260">
+
+<sub>Home screen · "Device Pass Karo!" between turns · a turn in progress</sub>
 
 </div>
 
@@ -83,13 +91,13 @@ React 19, Vite 8, Material UI v9, WebRTC + WebSocket, Cloudflare Workers (signal
 ## 🚀 Try It
 
 ```bash
-git clone https://github.com/satvik-jain-iitd/Monopoly-Deal-card-game-indian-version.git
-cd Monopoly-Deal-card-game-indian-version
+git clone https://github.com/satvik-jain-iitd/dhandha.git
+cd dhandha
 npm install
 npm run dev
 ```
 
-Open `http://localhost:5173`. Or just open the [live demo](https://satvik-jain-iitd.github.io/Monopoly-Deal-card-game-indian-version/) — it's a PWA, installable on any device.
+Open `http://localhost:5173`. Or just open the [live demo](https://satvik-jain-iitd.github.io/dhandha/) — it's a PWA, installable on any device.
 
 ```bash
 npm run build      # Production build
