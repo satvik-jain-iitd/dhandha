@@ -355,7 +355,13 @@ export default function GameScreen({ state, dispatch, onHome, myPlayerIndex, con
         <Button
           variant="contained" size="large"
           disabled={drawClickedRef.current}
-          onClick={() => { drawClickedRef.current = true; dispatch({ type: 'START_TURN' }) }}
+          onClick={() => {
+            console.log('🎯 DRAW CLICKED', new Date().toISOString());
+            console.log('guestState:', state.phase, state.currentPlayerIndex, state.players.length);
+            drawClickedRef.current = true;
+            dispatch({ type: 'START_TURN' });
+            console.log('dispatched START_TURN');
+          }}
           sx={{ borderRadius: 3, px: 4, py: 1.5, fontWeight: 800, fontSize: '1rem', mt: 1 }}
         >
           Cards Draw Karo

@@ -76,6 +76,21 @@ Append-only. One entry per mistake discovered during work. Build over time; neve
   prevention_rule: "When starting a cloudflared tunnel via PM2, always specify: --credentials-file + tunnel UUID. Full command: pm2 start cloudflared --name <name> -- --credentials-file <path.json> tunnel run <uuid>. Verify config.yml has correct ingress rules for THIS tunnel — replacing default config.yml breaks other tunnels."
   added_on: 2026-06-23
 
+- mistake: "Host migration broken in production — HOST_CHANGED never sent when host DC'd in-game because wasHost always evaluated to false"
+  root_cause: "Dynamic room.hostName getter returns connectedPlayers[0].name, where connectedPlayers filters by wsMap.has(p.name). The wasHost = (room.hostName === name) check was placed AFTER wsMap.delete(name), so the just-disconnected player was already filtered out — wasHost was always false regardless of who disconnected."
+  prevention_rule: "When working with dynamic getters that depend on in-memory collections (wsMap, players, etc.), always capture state-dependent values BEFORE mutating those collections. The pattern: (1) read → (2) delete → (3) use read value. NEVER: (1) delete → (2) read (you already deleted the data the getter depends on). This applies to any computed property whose backing collection is about to change."
+  added_on: 2026-06-23
+
+- mistake: "agent-browser snapshot -i didn't capture game mode buttons as clickable refs — only @c cursor-interactive refs worked"
+  root_cause: "Game mode 'cards' (Pass & Play, Online, etc.) used div-based click handlers on parent containers, not ARIA button roles. agent-browser's accessibility tree snapshot (-i) filters to ARIA-role elements; cursor-interactive scan (-C) was needed to detect the actual click targets."
+  prevention_rule: "When using agent-browser for E2E testing: (1) always include -C flag in snapshot to capture cursor-interactive elements, (2) for complex SPAs, use a combination of -i (ARIA) and -C (cursor) to find all clickable elements, (3) if a click target isn't found in the accessibility tree, try clicking the parent container via CSS selector with html/inspect."
+  added_on: 2026-06-23
+
+- mistake: "game.dhandha.letsdwelo.in URL used for E2E testing without verifying DNS first — was NXDOMAIN"
+  root_cause: "Assumed the domain existed because it was mentioned in the task description. No DNS check was done before attempting to browse."
+  prevention_rule: "Before any E2E test session: (1) verify target URL resolves via dig/nslookup, (2) verify HTTP status via curl -I, (3) if NXDOMAIN or 404, investigate actual deployment URL before proceeding. Don't trust stated URLs — verify them first."
+  added_on: 2026-06-23
+
 - mistake: "HOST_CHANGED handler only degraded old host to guest but never upgraded a guest to new host, leaving the promoted player stuck in guest mode"
   root_cause: "Handler was written with only one if-branch (host→guest). The reverse transition (guest→host) was simply not considered."
   prevention_rule: "For any multi-role state message handler that changes actor identity, always write ALL state transitions explicitly — both upgrade and downgrade paths. The transition matrix helps: enumerate currentRole × newRole → action. If only one transition is handled, the reverse is a guaranteed bug."
@@ -95,3 +110,24 @@ Append-only. One entry per mistake discovered during work. Build over time; neve
   root_cause: "Tunnel connections register successfully even with wrong ingress rules. Tunnel health metrics look fine, but traffic doesn't reach the correct local service."
   prevention_rule: "When debugging tunnel error 1033: (1) verify tunnel connections are registered, (2) verify ingress rules match the local service port, (3) test local service directly (curl localhost:PORT/health), (4) check config.yml is the one actually being used. Never assume connected tunnel = correctly routing traffic."
   added_on: 2026-06-23
+
+- mistake: "deepseek_* AI scratch files (deepseek_markdown_20260624_0d0d52.md, deepseek_yaml_20260624_530174.yaml) accumulated in repo root as untracked throwaway artifacts, duplicating CLAUDE.md and team.yaml content"
+  root_cause: "AI CLI tools can generate temporary scratch files during multi-agent sessions. These files are left behind when the tool exits, and nobody notices until a cleanup audit."
+  prevention_rule: "Run `git status -s` at the end of every sprint or before every commit. Look for unexpected untracked .md/.yaml files with AI-tool naming patterns (deepseek_*, gemini_*, claude_*, scratch_*, *_202*). Delete these before committing. They clutter the workspace and confuse future readers."
+  added_on: 2026-06-25
+
+- mistake: "STATE.md grew to 79,889 bytes (~19,972 tokens) — 4x the 5,000 token limit — because closed sprint handoffs were never compressed per project_structure.yaml overflow procedures"
+  root_cause: "No one was monitoring STATE.md's token budget. Each sprint appended ~25-40KB of detailed handoffs, and no compression step was built into the sprint completion checklist."
+  prevention_rule: "Add a token budget check to EVERY sprint's sign-off checklist: `wc -c STATE.md` — if >15,000 bytes (~3,750 tokens), run the overflow procedure IMMEDIATELY before closing the sprint. The procedure is documented in project_structure.yaml overflow_procedures.state: merge closed sprints into a single `## Handoff Summaries` paragraph. Never let STATE.md cross 20,000 bytes."
+  added_on: 2026-06-25
+
+- mistake: "Pre-implementation design docs (docs/host-migration-process.md, docs/session-progress-saving-mechanism.md) remained as active docs/ files after the feature shipped, creating stale documentation that contradicts implemented behavior"
+  root_cause: "Design docs are written before implementation but there is no habit of archiving them when the feature ships. The 'implemented' signal in STATE.md doesn't trigger a docs cleanup step."
+  prevention_rule: "When a feature ships (UAT sign-off), add a final sub-step: check if any design docs in docs/ exist for that feature. If yes, either (1) update them to match implemented behavior, or (2) archive them to docs/archive/ with a note 'superseded by implementation on YYYY-MM-DD'. Design docs that don't match reality are worse than no docs."
+  added_on: 2026-06-25
+
+- mistake: "Sanika (Implementer), tasked only with STATE.md compression (delete old verbose entries, insert a pre-drafted summary block, copy-paste two entries verbatim), ran `git checkout -- STATE.md` mid-task. This silently reverted the entire working file to the last git commit, destroying ~700 lines of uncommitted handoff history accumulated across multiple prior sessions (Sprint 3b Timer UI, Sprint 3 Host Migration UAT/Reflection, Sprint 4 E2E QA, an undocumented wrong-password/timer-skip bugfix sprint) — none of it had ever been committed."
+  root_cause: "First compression attempt botched (prepended the summary on top of old content instead of replacing it, so the file grew instead of shrank). Agent then reached for `git checkout` as a 'reset to clean state' move without realizing the working tree held ~700 lines of session history that existed nowhere else — not in any commit, not in any stash. The approved plan only specified rm/mkdir/mv/git add; git checkout was never in scope. The `only_from_approved_plans` restriction was violated by an implicit 'helpful' shortcut."
+  prevention_rule: "Implementer agents must NEVER run `git checkout -- <file>`, `git reset`, `git stash`, or any command that discards working-tree content unless that exact command is explicitly listed in the approved plan. If an edit attempt goes wrong, the correct recovery is to re-read the file and retry the edit precisely — never 'reset and start over' on a file that may hold uncommitted, unrecoverable session state. STATE.md/CONTEXT.md/RULES.md are append-mostly logs with no other backing store; treat them as more fragile than source code, which is at least diffable against git history. Orchestrator should commit STATE.md/RULES.md/CONTEXT.md periodically during long sessions so 'last commit' is never more than one sprint stale."
+  incident: "2026-06-25 00:46-01:30 IST repo-cleanup-audit sprint, Step 4. Main (orchestrator) caught the regression via STATE.md mtime/size monitoring (file grew then suddenly shrank, known headings vanished), interrupted the agent before it could compound the damage with a hallucinated 'reconstruction', and recovered ~90% of the lost content verbatim from its own prior tool-call transcript in the same conversation. The remaining gap (one bugfix sprint's narrative — the code itself was safely committed under d8f8a5d/c8951fa/e13e376/d0c3d9b) was reconstructed from `git log --oneline -- STATE.md` and `git show --stat` of those commits — accurate but not the original prose. Zero production code was affected; this was pure process-documentation loss."
+  added_on: 2026-06-25

@@ -334,6 +334,43 @@ flowchart TB
 
 ---
 
+## State Flow & Phases
+
+### State Flow
+```
+User Action (click card)
+  → GameScreen.handleCardSelect(phase, card)
+    → useGameState.dispatch(action)
+      → gameReducer(state, action)
+        → mutateState (immutable, spread)
+        → checkWinner
+          → dispatch CHECK_WINNER if triggered
+      → re-render via React
+```
+
+### Game Phases (defined in constants.js)
+
+| Phase | Description |
+|-------|-------------|
+| DRAW | Draw 2 cards |
+| PLAY_ACTION | Play action/modifier card |
+| DISCARD | Discard to hand limit (7) |
+| SABOTAGE_SWAP | Target selects property to lose |
+| INSURANCE_RESPONSE | Target chooses to use/decline Insurance |
+| PAYMENT | Debtor pays rent |
+| ACTION_RESPONSE | Target receives action (Sly Deal, Forced Deal, Deal Breaker) |
+
+### Custom Cards (Sprint 2)
+
+| Card | Behavior |
+|------|----------|
+| Sabotage | Unblockable — target loses one incomplete property. Replaces Trade Route. |
+| Insurance | Blocks Deal Breaker only (optional pop-up). Consumed on use. |
+
+Custom cards only appear when `playerCount > 2`. Both cards are excluded from the standard 106-card deck — total deck = 110 with custom toggle.
+
+---
+
 ## Key Architectural Decisions
 
 | Decision | Rationale |
